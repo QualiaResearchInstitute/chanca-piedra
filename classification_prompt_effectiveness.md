@@ -122,4 +122,4 @@ For example:
 108,0
 109,null
 
-Do not include any additional text, explanations, or headers in your response. Simply provide the ID,result pairs, one per line.
+Do not include any additional text, explanations, or headers in your response. Simply provide the ID,result pairs, one per line. Note that some IDs might not be consecutive numbers, so pay attention to always using the correct ID.

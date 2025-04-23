@@ -34,7 +34,7 @@ def parse_response(response_text):
 # File paths
 CSV_DIR = Path("csv-files")
 PROMPT_FILE = Path("classification_prompt_effectiveness.md")
-PLATFORM = "webmd-effectiveness-test"  # Change to "amazon" or "reddit" as needed
+PLATFORM = "reddit"  # {"webmd", "amazon", "reddit"}
 
 # Load your data
 df = pd.read_csv(CSV_DIR / f"{PLATFORM}.csv")
