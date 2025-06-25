@@ -34,7 +34,7 @@ def parse_response(response_text):
 # File paths
 CSV_DIR = Path("csv-files")
 PROMPT_FILE = Path("classification_prompt_effectiveness.md")
-PLATFORM = "reddit"  # {"webmd", "amazon", "reddit"}
+PLATFORM = "amazon"  # {"webmd", "amazon", "reddit"}
 
 # Load your data
 df = pd.read_csv(CSV_DIR / f"{PLATFORM}.csv")
@@ -49,15 +49,29 @@ client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 results = []
 batch_size = 100
 
+# Check if effectiveness column exists (WebMD/Amazon vs Reddit)
+has_effectiveness = 'Effectiveness' in df.columns
+
 # Process in batches
 for i in range(0, len(df), batch_size):
     batch = df.iloc[i:i+batch_size]
     
-    # Format the batch data
-    batch_text = "\n".join([f"{row['ID']},{row['Product']},{row['Website']},\"{row['Review']}\"" for _, row in batch.iterrows()])
+    # Format the batch data based on platform
+    if has_effectiveness:
+        # For WebMD/Amazon: include effectiveness rating
+        batch_text = "\n".join([f"{row['ID']},{row['Product']},{row['Website']},{row['Effectiveness']},\"{row['Review']}\"" for _, row in batch.iterrows()])
+    else:
+        # For Reddit: no effectiveness rating
+        batch_text = "\n".join([f"{row['ID']},{row['Product']},{row['Website']},\"{row['Review']}\"" for _, row in batch.iterrows()])
     
     # Create the prompt with your classification instructions
-    prompt = f"""{classification_prompt}
+    data_format_note = ""
+    if has_effectiveness:
+        data_format_note = "\nNOTE: This batch includes effectiveness ratings (1-5 scale) for WebMD/Amazon data."
+    else:
+        data_format_note = "\nNOTE: This batch contains Reddit data without effectiveness ratings."
+    
+    prompt = f"""{classification_prompt}{data_format_note}
     
     Here are the reviews to classify:
     {batch_text}

@@ -1,10 +1,18 @@
 ## Task
 
-You are a professional data classifier. The input data consists of tuples in the format (ID, Product, Website, Review), where:
+You are a professional data classifier. The input data consists of tuples in one of two formats:
 
+**Format 1 (WebMD/Amazon with effectiveness ratings):** (ID, Product, Website, Effectiveness, Review)
 - ID is a unique numerical identifier
 - Product is the name of the medication or treatment
-- Website is the source (WebMD, Amazon, or Reddit)
+- Website is the source (WebMD or Amazon)
+- Effectiveness is a 1-5 rating scale (1=worst, 5=best) provided by the reviewer
+- Review is the text content to be classified
+
+**Format 2 (Reddit without effectiveness ratings):** (ID, Product, Website, Review)
+- ID is a unique numerical identifier
+- Product is the name of the medication or treatment
+- Website is the source (Reddit)
 - Review is the text content to be classified
 
 Your task is to classify each review/post based on whether the user reports the product helping with kidney stones or related symptoms. The goal is to determine if users experienced positive effects specifically for kidney stones, regardless of review quality or level of detail.
@@ -21,6 +29,7 @@ Your task is to classify each review/post based on whether the user reports the 
 - User reports improvement in urination or other urological symptoms related to kidney stones
 - User reports positive laboratory results showing stone reduction or improved kidney function
 - User makes clear statements like "it helped," "it worked," "stones went away," etc.
+- **For data with effectiveness ratings:** Effectiveness rating is 4 or 5 AND the review text indicates positive outcomes or satisfaction (even if brief)
 
 ### Return 0 if ANY of these conditions are met:
 
@@ -30,6 +39,7 @@ Your task is to classify each review/post based on whether the user reports the 
 - User explicitly states disappointment with results
 - User indicates they discontinued use due to lack of effectiveness
 - User reports the product did not work as expected or advertised
+- **For data with effectiveness ratings:** Effectiveness rating is 1 or 2 AND the review text mentions side effects, problems, or lack of benefit (even if not explicitly stated)
 
 ### Return null if ANY of these conditions are met:
 
@@ -43,6 +53,26 @@ Your task is to classify each review/post based on whether the user reports the 
 - The text is too ambiguous to determine if the product helped
 
 ## Special Cases
+
+### Effectiveness Rating Guidelines (WebMD/Amazon only):
+
+When effectiveness ratings are provided (1-5 scale), use them as supporting evidence alongside the review text:
+
+- **Rating 1-2:** Strong indication of ineffectiveness. If review mentions side effects, problems, or lack of benefit (even without explicit "didn't work" language), classify as "0"
+- **Rating 3:** Neutral/mixed. Rely primarily on review text content for classification
+- **Rating 4-5:** Strong indication of effectiveness. If review indicates positive outcomes or satisfaction, classify as "1" 
+- **Important:** The rating should support but not override clear textual evidence. If text clearly contradicts the rating, prioritize the text content.
+
+### Examples with Effectiveness Ratings:
+
+**Example 1:** Rating=1, Review="I have been taking this medication for one week... The side effects still horrible. Nausea, abdominal pain, headache..."
+→ Classification: **0** (Low rating + side effects = ineffective)
+
+**Example 2:** Rating=5, Review="very good"  
+→ Classification: **1** (High rating + positive text = effective)
+
+**Example 3:** Rating=2, Review="The capsules are easy to swallow. Fast shipping."
+→ Classification: **null** (Low rating but review doesn't mention kidney stone outcomes)
 
 ### Reddit-Specific Considerations:
 - Many Reddit posts are questions or discussions rather than product reviews
@@ -78,6 +108,8 @@ Example: If the input shows "Product: Chanca Piedra" but the review says "I trie
 - "After years of suffering, this is the only thing that's helped me."
 - "It doesn't dissolve stones like they claim, but it does seem to help them pass more easily."
 - "I think it helped, stones passed with less pain than before."
+- **With rating:** Rating=5, "I have been taking for 3 months and have not had any kidney Stone flareups since taking this... This seems to have helped." (High rating + positive outcome)
+- **With rating:** Rating=5, "very good" (High rating + positive language, assume kidney stone context)
 
 ### Examples coded as 0 (Did not help):
 
@@ -89,6 +121,8 @@ Example: If the input shows "Product: Chanca Piedra" but the review says "I trie
 - "Had high hopes based on reviews but saw no improvement."
 - "Followed directions exactly but stones didn't pass any faster."
 - "Tried this before surgery but it didn't help reduce or pass the stones."
+- **With rating:** Rating=1, "I have been taking this medication for one week. The side effects still horrible. Nausea, abdominal pain, headache." (Low rating + side effects = ineffective)
+- **With rating:** Rating=2, "After 9 months of taking 300 mg once a day, I finally decided to see if 'rash and hives' was a side-effect." (Low rating + side effects mentioned)
 
 ### Examples coded as null (Unclear/Not applicable):
 
@@ -110,6 +144,9 @@ Example: If the input shows "Product: Chanca Piedra" but the review says "I trie
 4. Give benefit of doubt - if user says it helped in any way, code as 1
 5. A review that reports mixed results (helped one symptom but not another) should be coded as 1
 6. Do not make assumptions - only classify based on what is explicitly stated
+7. **When effectiveness ratings are available:** Use ratings as supporting evidence to resolve ambiguous cases, but prioritize clear textual evidence over ratings when they conflict
+8. **Rating 1-2 + ambiguous text with side effects = classify as "0"**
+9. **Rating 4-5 + positive language = classify as "1"**
 
 ## Output Format
 Please respond with a list where each row contains the ID and result in the format "ID,result", where:
